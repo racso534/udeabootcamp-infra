@@ -3,8 +3,13 @@ Description: Infraestructura de aplicación enlazada a VPC existente
 
 Parameters:
   KeyPairName:
-    Description: Nombre de un par de llaves EC2 existente
-    Type: AWS::EC2::KeyPair::KeyName
+    Description: Nombre de un par de llaves EC2 existente (opcional)
+    Type: String
+    Default: ""
+    AllowedPattern: ".*"
+
+Conditions:
+  HasKeyPair: !Not [!Equals [!Ref KeyPairName, ""]]
 
 Resources:
   PublicSubnet1:
@@ -13,7 +18,7 @@ Resources:
       VpcId: !ImportValue UdeABootCamp-VPCId
       CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      AvailabilityZone: !Select [0, !GetAZs '']
       Tags:
         - Key: Name
           Value: UdeABootCamp-Public-Subnet-1
@@ -40,7 +45,11 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
-      KeyName: !Ref KeyPairName
+      KeyName: 
+        !If
+          - HasKeyPair
+          - !Ref KeyPairName
+          - !Ref "AWS::NoValue"
       SecurityGroupIds:
         - !Ref WebServerSG
       SubnetId: !Ref PublicSubnet1
