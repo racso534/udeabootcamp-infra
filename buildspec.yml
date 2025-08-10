@@ -3,7 +3,7 @@ version: 0.2
 env:
   variables:
     STACK_NAME: "udeabootcamp-stack"
-    TEMPLATE_FILE: "templates/vpc.yml"
+    TEMPLATE_FILE: "templates/main.yml"
     REGION: "us-east-2"
 
 phases:
@@ -22,8 +22,6 @@ phases:
     commands:
       - echo "Desplegando stack de CloudFormation..."
       - aws cloudformation deploy --stack-name "$STACK_NAME" --template-file "$TEMPLATE_FILE" --capabilities CAPABILITY_NAMED_IAM --region "$REGION"
-      - echo "Desplegando infraestructura de aplicación..."
-      - aws cloudformation deploy --template-file app-infra.yml --stack-name udeabootcamp-app --capabilities CAPABILITY_NAMED_IAM
 
   post_build:
     commands:
