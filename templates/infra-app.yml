@@ -1,70 +1,151 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: Infraestructura de aplicación enlazada a VPC existente
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  ECR repositories, ECS Cluster (EC2 launch), IAM roles, Launch Configuration and AutoScalingGroup
+  for ProyectoFestivos. Instances will join the ECS cluster via UserData.
 
 Parameters:
-  KeyPairName:
-    Description: Nombre de un par de llaves EC2 existente (opcional)
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+    Default: staging
+  ClusterName:
+    Type: String
+  ECRRepoBackend:
+    Type: String
+  ECRRepoFrontend:
+    Type: String
+  InstanceType:
+    Type: String
+    Default: t2.micro
+    Description: EC2 instance type for ECS instances (free-tier: t2.micro)
+  KeyName:
     Type: String
     Default: ""
-    AllowedPattern: ".*"
-
-Conditions:
-  HasKeyPair: !Not [!Equals [!Ref KeyPairName, ""]]
+    Description: Optional EC2 KeyPair name for SSH (leave empty to omit)
+  AmiSSMParameter:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+    Description: SSM parameter path for AMI ID
 
 Resources:
-  PublicSubnet1:
-    Type: AWS::EC2::Subnet
+  # ECR repos
+  ECRBackend:
+    Type: AWS::ECR::Repository
     Properties:
-      VpcId: !ImportValue UdeABootCamp-VPCId
-      CidrBlock: 10.0.2.0/24
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [0, !GetAZs '']
-      Tags:
-        - Key: Name
-          Value: UdeABootCamp-Public-Subnet-1
+      RepositoryName: !Ref ECRRepoBackend
+      LifecyclePolicy:
+        LifecyclePolicyText:
+          Fn::Sub: |
+            {
+              "rules": [
+                {"rulePriority": 1, "description": "Keep last 10 images", "selection": {"tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 10}, "action": {"type": "expire"}}
+              ]
+            }
 
-  WebServerSG:
+  ECRFrontend:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref ECRRepoFrontend
+      LifecyclePolicy:
+        LifecyclePolicyText:
+          Fn::Sub: |
+            {
+              "rules": [
+                {"rulePriority": 1, "description": "Keep last 10 images", "selection": {"tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 10}, "action": {"type": "expire"}}
+              ]
+            }
+
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref ClusterName
+
+  # IAM Role for ECS instances
+  ECSInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  ECSInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref ECSInstanceRole
+      Path: /
+
+  # Security Group for ECS instances
+  ECSInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Permitir HTTP y SSH
-      VpcId: !ImportValue UdeABootCamp-VPCId
+      GroupDescription: Security group for ECS instances
+      VpcId: !ImportValue
+        'Fn::Sub': "${ProjectName}-${Environment}-vpc" # <-- note: we will pass VPC as export, or you can use param (we assumed import)
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
-          Value: UdeABootCamp-WebServerSG
+          Value: !Sub "${ProjectName}-${Environment}-ecs-sg"
 
-  WebServerInstance:
-    Type: AWS::EC2::Instance
+  # Launch Configuration / ASG for ECS instances
+  ECSLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-      InstanceType: t2.micro
-      KeyName: 
-        !If
-          - HasKeyPair
-          - !Ref KeyPairName
-          - !Ref "AWS::NoValue"
-      SecurityGroupIds:
-        - !Ref WebServerSG
-      SubnetId: !Ref PublicSubnet1
-      ImageId: !Ref LatestAmazonLinux2AmiId
+      ImageId: !Ref AmiSSMParameter
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref ECSInstanceProfile
+      SecurityGroups:
+        - !Ref ECSInstanceSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo "ECS_CLUSTER=${ClusterName}" >> /etc/ecs/ecs.config
+          # install awslogs config (optional)
+          yum update -y
+          yum install -y aws-cli jq
+          # start ecs agent (on ami it should be present)
+          start ecs || true
+
+  ECSAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !ImportValue
+            'Fn::Sub': "${ProjectName}-${Environment}-private-1"
+        - !ImportValue
+            'Fn::Sub': "${ProjectName}-${Environment}-private-2"
+      LaunchConfigurationName: !Ref ECSLaunchConfiguration
+      MinSize: '1'
+      MaxSize: '2'
+      DesiredCapacity: '1'
       Tags:
         - Key: Name
-          Value: UdeABootCamp-WebServer
-
-  LatestAmazonLinux2AmiId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+          Value: !Sub "${ProjectName}-${Environment}-ecs-asg"
+          PropagateAtLaunch: true
 
 Outputs:
-  PublicSubnet1Id:
-    Description: ID de la subred pública creada
-    Value: !Ref PublicSubnet1
-    Export:
-      Name: UdeABootCamp-PublicSubnet1Id
+  ECRBackendUri:
+    Description: ECR repository URI for backend
+    Value: !GetAtt [ECRBackend, RepositoryUri]
+  ECRFrontendUri:
+    Description: ECR repository URI for frontend
+    Value: !GetAtt [ECRFrontend, RepositoryUri]
+  ECSClusterName:
+    Description: ECS cluster name
+    Value: !Ref ECSCluster

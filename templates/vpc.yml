@@ -1,60 +1,176 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: >
-  CloudFormation - VPC y Subred privada para el proyecto UdeABootCamp
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  VPC, Public and Private Subnets for ProyectoFestivos.
+  Parameters supplied by infra/parameters/params.json when deploying.
+
+Parameters:
+  ProjectName:
+    Type: String
+  Environment:
+    Type: String
+    Default: staging
+  VpcCIDR:
+    Type: String
+    Description: CIDR block for the VPC
+  PublicSubnet1CIDR:
+    Type: String
+  PublicSubnet2CIDR:
+    Type: String
+  PrivateSubnet1CIDR:
+    Type: String
+  PrivateSubnet2CIDR:
+    Type: String
+  Az1:
+    Type: String
+    Default: !Select [0, !GetAZs '']
+  Az2:
+    Type: String
+    Default: !Select [1, !GetAZs '']
 
 Resources:
-  # VPC
-  UdeABootCampVPC:
+  VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref VpcCIDR
       EnableDnsSupport: true
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: UdeABootCamp-VPC
+          Value: !Sub "${ProjectName}-${Environment}-vpc"
 
-  # Subnet privada
-  UdeABootCampPrivateSubnet1:
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-igw"
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-public-rt"
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref UdeABootCampVPC
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: false
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnet1CIDR
+      AvailabilityZone: !Ref Az1
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: UdeABootCamp-Private-Subnet-1
+          Value: !Sub "${ProjectName}-${Environment}-public-1"
 
-  # Security Group base (para usar luego con ECS/RDS)
-  UdeABootCampBaseSG:
-    Type: AWS::EC2::SecurityGroup
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
     Properties:
-      GroupDescription: SG base para UdeABootCamp
-      VpcId: !Ref UdeABootCampVPC
-      SecurityGroupIngress: []
-      SecurityGroupEgress:
-        - IpProtocol: -1
-          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnet2CIDR
+      AvailabilityZone: !Ref Az2
+      MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: UdeABootCamp-BaseSG
+          Value: !Sub "${ProjectName}-${Environment}-public-2"
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  NatEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-nat"
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-private-rt"
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      AvailabilityZone: !Ref Az1
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-private-1"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      AvailabilityZone: !Ref Az2
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-private-2"
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
 
 Outputs:
-  VPCId:
-    Description: ID de la VPC de UdeABootCamp
-    Value: !Ref UdeABootCampVPC
-    Export:
-      Name: UdeABootCamp-VPCId
-
-  PrivateSubnet1Id:
-    Description: ID de la subred privada
-    Value: !Ref UdeABootCampPrivateSubnet1
-    Export:
-      Name: UdeABootCamp-PrivateSubnet1Id
-
-  BaseSecurityGroupId:
-    Description: ID del Security Group base
-    Value: !Ref UdeABootCampBaseSG
-    Export:
-      Name: UdeABootCamp-BaseSGId
+  VpcId:
+    Description: VPC Id
+    Value: !Ref VPC
+  PublicSubnetIds:
+    Description: Public subnet IDs (comma separated)
+    Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+  PrivateSubnetIds:
+    Description: Private subnet IDs (comma separated)
+    Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]

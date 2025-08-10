@@ -1,0 +1,24 @@
+{
+  "AWSRegion": "us-east-1",
+  "ProjectName": "ProyectoFestivos",
+  "Environment": "staging",
+  
+  "VpcCIDR": "10.0.0.0/16",
+  "PublicSubnet1CIDR": "10.0.1.0/24",
+  "PublicSubnet2CIDR": "10.0.2.0/24",
+  "PrivateSubnet1CIDR": "10.0.3.0/24",
+  "PrivateSubnet2CIDR": "10.0.4.0/24",
+
+  "ClusterName": "proyectofestivos-cluster",
+  "ECRRepoBackend": "apifestivos-backend",
+  "ECRRepoFrontend": "apifestivos-frontend",
+  
+  "BackendPort": 8080,
+  "FrontendPort": 80,
+  
+  "DBEngine": "postgres",
+  "DBName": "festivosdb",
+  "DBPort": 5432,
+  "DBUserParam": "/proyectofestivos/db_user",
+  "DBPassParam": "/proyectofestivos/db_pass"
+}
