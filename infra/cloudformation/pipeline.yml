@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CodePipeline para Proyecto Festivos con integración GitHub (CodeConnections)
+
+Parameters:
+  GitHubConnectionArn:
+    Type: String
+    Description: ARN de la conexión de CodeConnections con GitHub
+  GitHubRepository:
+    Type: String
+    Default: TT_ANI_ProyectoFestivos
+    Description: Nombre del repositorio en GitHub (usuario/repo)
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: Rama a usar Main de GitHub
+  ClusterName:
+    Type: String
+    Default: proyectofestivos-cluster
+  ServiceName:
+    Type: String
+    Default: proyectofestivos-backend
+
+Resources:
+  ProjectFestivosPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt PipelineRole.Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceFromGitHub
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: '1'
+              Configuration:
+                ConnectionArn: !Ref GitHubConnectionArn
+                FullRepositoryId: !Ref GitHubRepository
