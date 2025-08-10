@@ -19,16 +19,66 @@ Esta API gestiona festivos de diferentes países usando Spring Boot, PostgreSQL 
 ## Estructura del Proyecto
 
 ```
-├── apiFestivos/           # Código fuente de la API
-│   ├── dominio/          # Entidades y DTOs
-│   ├── core/             # Interfaces de servicios
-│   ├── aplicacion/       # Implementación de servicios
-│   ├── infraestructura/  # Repositorios
-│   ├── presentacion/     # Controladores y configuración
-│   └── Dockerfile        # Imagen Docker para la API
-├── bd/                   # Scripts de base de datos
-├── docker-compose.yml    # Configuración de servicios
-└── Makefile             # Comandos útiles
+UDEABOOTCAMP/
+│
+├── 📂 .idea/                    # Configuración del IDE
+│   ├── 📄 .gitignore
+│   ├── 📄 compiler.xml
+│   ├── 📄 copilotDirState.xml
+│   ├── 📄 encodings.xml
+│   ├── 📄 jarRepositories.xml
+│   ├── 📄 misc.xml
+│   ├── 📄 modules.xml
+│   ├── 📄 TT_ANI_ProyectoFestivos.iml
+│   └── 📄 vcs.xml
+│
+├── 📂 apiFestivos/              # 🎯 API Backend - Días Festivos (Arquitectura Limpia)
+│   ├── 📂 dominio/              # 📋 Entidades y DTOs del negocio
+│   ├── 📂 core/                 # 🔧 Interfaces de servicios y contratos
+│   ├── 📂 aplicacion/           # 💼 Implementación de servicios y casos de uso
+│   ├── 📂 infraestructura/      # 🗃️ Repositorios y acceso a datos
+│   ├── 📂 presentacion/         # 🌐 Controladores REST y configuración
+│   ├── 📂 src/                  # Código fuente adicional
+│   └── 📄 Dockerfile            # 🐳 Imagen Docker para la API
+│
+├── 📂 bd/                       # 🗄️ Scripts de Base de Datos
+│   ├── 📄 DDL - Festivos.sql    # Definición de estructura (tablas, índices)
+│   ├── 📄 DML - Festivos.sql    # Datos maestros y de prueba
+│   └── 📄 init.sql              # Script de inicialización automática
+│
+├── 📂 infra/                    # ☁️ Infraestructura como Código (AWS IaC)
+│   ├── 📂 cloudformation/       # 📑 Templates de CloudFormation
+│   │   ├── 📄 vpc.yml           # 🌐 Red virtual privada
+│   │   ├── 📄 infra-app.yml     # 🚀 ECS + ECR (Oscar - equivalente ecr-ecs.yml)
+│   │   ├── 📄 iam.yml           # 🔐 Roles y políticas IAM
+│   │   ├── 📄 rds.yml           # 🗃️ Base de datos RDS (opcional free tier)
+│   │   ├── 📄 alb-acm.yml       # ⚖️ Application Load Balancer + ACM (opcional)
+│   │   ├── 📄 cw-sns.yml        # 📊 CloudWatch + SNS para monitoreo
+│   │   └── 📄 pipeline.yml      # 🔄 CodePipeline + CodeBuild para CI/CD
+│   │
+│   ├── 📂 parameters/
+│   │   └── 📄 params.json       # ⚙️ Parámetros centralizados para todos los stacks
+│   │
+│   ├── 📂 scripts/
+│   │   ├── 📄 deploy.sh         # 🚀 Script principal de despliegue
+│   │   ├── 📄 deploy.bash       # ⚠️ Script alternativo (duplicado - no usar)
+│   │   └── 📄 deploy-stack.sh   # 📦 Script para despliegue de stacks individuales
+│   │
+│   └── 📄 README_infra.md       # 📖 Instrucciones detalladas de despliegue desde AWS
+│
+├── 📂 ci/                       # 🔄 Integración Continua
+│   ├── 📄 buildspec.yml         # 🛠️ Configuración general de CodeBuild
+│   ├── 📄 buildspec-backend.yml # ⚙️ Configuración específica para backend
+│   └── 📄 buildspec-frontend.yml# 🎨 Configuración específica para frontend
+│
+├── 📄 docker-compose.yml        # 🐳 Orquestación de servicios para desarrollo local
+├── 📄 Dockerfile               # 🐳 Imagen Docker principal del proyecto
+├── 📄 mvnw                     # 🔧 Maven Wrapper (Unix/Linux)
+├── 📄 mvnw.cmd                 # 🔧 Maven Wrapper (Windows)
+├── 📄 pom.xml                  # 📋 Configuración de Maven y dependencias
+├── 📄 Makefile                 # 🛠️ Comandos útiles para desarrollo y construcción
+├── 📄 LICENSE                  # 📜 Licencia del proyecto
+└── 📄 README.md                # 📖 Documentación principal del proyecto
 ```
 
 ## Servicios Incluidos
