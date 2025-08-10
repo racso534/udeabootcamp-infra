@@ -14,9 +14,20 @@ phases:
 
   build:
     commands:
-      - echo creando cloudformation stack...
-      - aws cloudformation deploy --stack-name "$STACK_NAME" --template-file "$TEMPLATE_FILE" --capabilities CAPABILITY_NAMED_IAM --region "$REGION"
-      - echo stack creado
+      - echo "Creando CloudFormation stack..."
+      # Validar variables
+      - |
+        if [ -z "udeabootcamp-stack" ] || [ -z "templates/vpc.yml" ]; then
+          echo "Error: Falta el nombre del stack o el archivo de template."
+          exit 1
+        fi
+      # Ejecutar despliegue
+      - aws cloudformation deploy \
+          --stack-name "udeabootcamp-stack" \
+          --template-file "templates/vpc.yml" \
+          --capabilities CAPABILITY_NAMED_IAM \
+          --region "$REGION"
+      - echo "Stack creado correctamente."
 
   post_build:
     commands:
