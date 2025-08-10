@@ -1,7 +1,10 @@
 version: 0.2
 
-phases:
+env:
+  variables:
+    REGION: "us-east-2" # Región por defecto, se puede sobrescribir en la consola de CodeBuild
 
+phases:
   install:
     runtime-versions:
       nodejs: 16
@@ -10,7 +13,7 @@ phases:
 
   pre_build:
     commands:
-      - echo pre_build...
+      - echo "Fase pre_build..."
 
   build:
     commands:
@@ -31,4 +34,4 @@ phases:
 
   post_build:
     commands:
-      - echo post_build...
+      - echo "Fase post_build..."
