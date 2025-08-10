@@ -4,6 +4,7 @@ env:
   variables:
     STACK_NAME: "udeabootcamp-stack"
     TEMPLATE_FILE: "templates/vpc.yml"
+    APP_INFRA_TEMPLATE_FILE: "templates/app-infra.yml"
     REGION: "us-east-2"
 
 phases:
@@ -24,7 +25,7 @@ phases:
       - aws cloudformation deploy --stack-name "$STACK_NAME" --template-file "$TEMPLATE_FILE" --capabilities CAPABILITY_NAMED_IAM --region "$REGION"
       
       - echo "Desplegando infraestructura de aplicación..."
-      - aws cloudformation deploy --template-file app-infra.yml --stack-name udeabootcamp-app --capabilities CAPABILITY_NAMED_IAM --region "$REGION"
+      - aws cloudformation deploy --template-file "$APP_INFRA_TEMPLATE_FILE" --stack-name udeabootcamp-app --capabilities CAPABILITY_NAMED_IAM --region "$REGION"
 
   post_build:
     commands:
