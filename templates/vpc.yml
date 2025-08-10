@@ -44,9 +44,17 @@ Outputs:
   VPCId:
     Description: ID de la VPC de UdeABootCamp
     Value: !Ref UdeABootCampVPC
+    Export:
+      Name: UdeABootCamp-VPCId
+
   PrivateSubnet1Id:
     Description: ID de la subred privada
     Value: !Ref UdeABootCampPrivateSubnet1
+    Export:
+      Name: UdeABootCamp-PrivateSubnet1Id
+
   BaseSecurityGroupId:
     Description: ID del Security Group base
     Value: !Ref UdeABootCampBaseSG
+    Export:
+      Name: UdeABootCamp-BaseSGId

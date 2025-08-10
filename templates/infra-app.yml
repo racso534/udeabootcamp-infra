@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Infraestructura de aplicación enlazada a VPC existente
+
+Parameters:
+  KeyPairName:
+    Description: Nombre de un par de llaves EC2 existente
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue UdeABootCamp-VPCId
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: UdeABootCamp-Public-Subnet-1
+
+  WebServerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permitir HTTP y SSH
+      VpcId: !ImportValue UdeABootCamp-VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: UdeABootCamp-WebServerSG
+
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !Ref WebServerSG
+      SubnetId: !Ref PublicSubnet1
+      ImageId: !Ref LatestAmazonLinux2AmiId
+      Tags:
+        - Key: Name
+          Value: UdeABootCamp-WebServer
+
+  LatestAmazonLinux2AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+Outputs:
+  PublicSubnet1Id:
+    Description: ID de la subred pública creada
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: UdeABootCamp-PublicSubnet1Id
