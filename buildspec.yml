@@ -1,11 +1,5 @@
 version: 0.2
 
-# Variables de entorno que deben ser configuradas en el proyecto CodeBuild en la consola de AWS
-# AWS_ACCOUNT_ID: Tu ID de cuenta de AWS (ej: 534224643194)
-# AWS_DEFAULT_REGION: us-east-2
-# IMAGE_REPO_NAME: api-monedas (nombre de tu repositorio ECR)
-# CONTAINER_NAME: api-monedas-container (nombre del contenedor en tu task-definition.json)
-
 phases:
 
   install:
@@ -21,6 +15,7 @@ phases:
   build:
     commands:
       - echo creando cloudformation stack...
+      - chmod +x scripts/deploy.sh
       - ./scripts/deploy.sh udeabootcamp-stack templates/vpc.yml
       - echo stack creado
 
