@@ -5,11 +5,11 @@ Resources:
   VPCStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: vpc.yml
+      Location: vpc.yml
 
   AppInfraStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: app-infra.yml
+      Location: app-infra.yml
       Parameters:
         VpcId: !GetAtt VPCStack.Outputs.VpcId
