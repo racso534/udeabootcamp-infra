@@ -1,59 +1,61 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Uso:
-# ./scripts/deploy.sh templates/vpc.yml proyectofestivos-network
-# ./scripts/deploy.sh templates/infra-app.yml proyectofestivos-infra-app
+check_resource_exists() {
+    local resource_type="$1"
+    local resource_name="$2"
+    local region="$3"
 
-# Script actualizado para despliegues 100% desde AWS CloudShell.
-# - Lee automáticamente parámetros desde params.json (sin hardcodear valores).
-# - Compatible con cualquier plantilla CloudFormation (VPC, ECS, Pipeline, etc.).
-# - Evita modificar el script al cambiar parámetros; todo se gestiona en params.json.
-# - Incluye validaciones y soporte para CAPABILITY_NAMED_IAM.
+    case "$resource_type" in
+        "stack")
+            if aws cloudformation describe-stacks --stack-name "$resource_name" --region "$region" >/dev/null 2>&1; then
+                echo "✓ Stack $resource_name ya existe, saltando..."
+                return 0
+            fi
+            ;;
+        "ecr")
+            if aws ecr describe-repositories --repository-names "$resource_name" --region "$region" >/dev/null 2>&1; then
+                echo "✓ ECR Repository $resource_name ya existe, saltando..."
+                return 0
+            fi
+            ;;
+        "ecs-cluster")
+            if aws ecs describe-clusters --clusters "$resource_name" --region "$region" --query 'clusters[0]' >/dev/null 2>&1; then
+                echo "✓ ECS Cluster $resource_name ya existe, saltando..."
+                return 0
+            fi
+            ;;
+    esac
+    return 1
+}
 
-TEMPLATE_FILE="$1"
-STACK_NAME="$2"
-PARAM_FILE="${3:-infra/parameters/params.json}"
-AWS_REGION="${AWS_REGION:-us-east-1}"
+# ...existing code...
 
-if [ -z "$TEMPLATE_FILE" ] || [ -z "$STACK_NAME" ]; then
-  echo "Uso: $0 <template-file> <stack-name> [params.json]"
-  exit 1
+# Antes del deploy, verificar recursos
+if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
+    echo "Stack ya existe, verificando otros recursos..."
+    
+    # Verificar repositorio ECR
+    ECR_REPO_NAME=$(jq -r '.RepositoryName // empty' "$PARAM_FILE")
+    if [ ! -z "$ECR_REPO_NAME" ] && ! check_resource_exists "ecr" "$ECR_REPO_NAME" "$AWS_REGION"; then
+        echo "Creando repositorio ECR $ECR_REPO_NAME..."
+        aws ecr create-repository --repository-name "$ECR_REPO_NAME" --region "$AWS_REGION"
+    fi
+    
+    # Verificar cluster ECS
+    ECS_CLUSTER_NAME=$(jq -r '.ClusterName // empty' "$PARAM_FILE")
+    if [ ! -z "$ECS_CLUSTER_NAME" ] && ! check_resource_exists "ecs-cluster" "$ECS_CLUSTER_NAME" "$AWS_REGION"; then
+        echo "Creando cluster ECS $ECS_CLUSTER_NAME..."
+        aws ecs create-cluster --cluster-name "$ECS_CLUSTER_NAME" --region "$AWS_REGION"
+    fi
+    
+    exit 0
 fi
 
-if [ ! -f "$TEMPLATE_FILE" ]; then
-  echo "Template file $TEMPLATE_FILE no existe"
-  exit 2
-fi
-
-if [ ! -f "$PARAM_FILE" ]; then
-  echo "Params file $PARAM_FILE no existe"
-  exit 3
-fi
-
-if ! command -v jq >/dev/null 2>&1; then
-  echo "jq no está instalado. Instalando en CloudShell..."
-  sudo yum -y install jq || sudo apt-get update && sudo apt-get install -y jq || true
-fi
-
-# build --parameter-overrides string from params.json
-PARAM_OVERRIDES=""
-for key in $(jq -r 'keys[]' "$PARAM_FILE"); do
-  value=$(jq -r --arg k "$key" '.[$k]' "$PARAM_FILE")
-  # Skip empty values
-  if [ "$value" = "null" ] || [ -z "$value" ]; then
-    continue
-  fi
-  # If value is a string that contains spaces or special chars, wrap in quotes
-  PARAM_OVERRIDES="$PARAM_OVERRIDES $key=\"$value\""
-done
-
-echo "Deploying $TEMPLATE_FILE as $STACK_NAME to region $AWS_REGION"
-echo "Parameter overrides: $PARAM_OVERRIDES"
-
+echo "🚀 Desplegando nuevo stack..."
 aws cloudformation deploy \
-  --template-file "$TEMPLATE_FILE" \
-  --stack-name "$STACK_NAME" \
-  --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
-  --parameter-overrides $PARAM_OVERRIDES \
-  --region "$AWS_REGION"
+    --template-file "$TEMPLATE_FILE" \
+    --stack-name "$STACK_NAME" \
+    --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+    --parameter-overrides $PARAM_OVERRIDES \
+    --region "$AWS_REGION"
