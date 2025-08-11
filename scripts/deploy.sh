@@ -113,3 +113,8 @@ aws cloudformation describe-stacks \
     --query 'Stacks[0].Outputs' \
     --output table \
     --region "$AWS_REGION"
+
+echo "🎉 Pipeline listo y configurado! Ahora puedes:"
+echo "  1. Verificar el pipeline en la consola de AWS CodePipeline"
+echo "  2. Hacer push a tu repo para iniciar el primer deployment"
+echo "  3. Monitorear el progreso en AWS Console"
