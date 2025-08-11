@@ -77,7 +77,7 @@ if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
     # Obtener nombres de repositorios ECR
     ECR_REPO_BACKEND=$(jq -r '.[] | select(.ParameterKey=="ECRRepoBackend") | .ParameterValue' "$PARAM_FILE")
     ECR_REPO_FRONTEND=$(jq -r '.[] | select(.ParameterKey=="ECRRepoFrontend") | .ParameterValue' "$PARAM_FILE")
-    
+
     # Verificar repositorios ECR
     for repo in "$ECR_REPO_BACKEND" "$ECR_REPO_FRONTEND"; do
         if [ ! -z "$repo" ] && ! check_resource_exists "ecr" "$repo" "$AWS_REGION"; then
@@ -85,14 +85,30 @@ if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
             aws ecr create-repository --repository-name "$repo" --region "$AWS_REGION"
         fi
     done
-    
+
     # Verificar cluster ECS
     ECS_CLUSTER_NAME=$(jq -r '.[] | select(.ParameterKey=="ClusterName") | .ParameterValue' "$PARAM_FILE")
     if [ ! -z "$ECS_CLUSTER_NAME" ] && ! check_resource_exists "ecs-cluster" "$ECS_CLUSTER_NAME" "$AWS_REGION"; then
         echo "Creando cluster ECS $ECS_CLUSTER_NAME..."
         aws ecs create-cluster --cluster-name "$ECS_CLUSTER_NAME" --region "$AWS_REGION"
     fi
-    
+    # Agregar resumen final aquí
+    echo ""
+    echo "🎯 Resumen de la infraestructura existente:"
+    echo "----------------------------------------"
+    echo "✓ Stack CloudFormation: $STACK_NAME"
+    echo "✓ Repositorios ECR:"
+    echo "  • Backend: $ECR_REPO_BACKEND"
+    echo "  • Frontend: $ECR_REPO_FRONTEND"
+    echo "✓ Cluster ECS: $ECS_CLUSTER_NAME"
+    echo ""
+    echo "🎉 Todo listo! La infraestructura ya está desplegada y lista para usar."
+    echo ""
+    echo "Próximos pasos:"
+    echo "  1. Verificar el pipeline en: https://console.aws.amazon.com/codesuite/codepipeline/pipelines"
+    echo "  2. Hacer push a tu repo para iniciar un nuevo deployment"
+    echo "  3. Monitorear el progreso en AWS Console"
+
     exit 0
 fi
 
