@@ -46,7 +46,11 @@ Resources:
                   - iam:PassRole
                   - ecs:*
                   - ecr:*
-                Resource: "*"
+                  - codestar-connections:UseConnection
+                  - codestar-connections:GetConnection
+                Resource:
+                  - "*"
+                  - !Ref GitHubConnectionArn
 
   ProjectFestivosPipeline:
     Type: AWS::CodePipeline::Pipeline
