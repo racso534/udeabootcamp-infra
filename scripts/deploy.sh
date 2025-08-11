@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Validate input parameters
+if [ "$#" -ne 3 ]; then
+    echo "❌ Error: Missing required parameters"
+    echo "Usage: $0 <template-file> <stack-name> <parameter-file>"
+    echo "Example: $0 infra/cloudformation/pipeline.yml proyectofestivos-pipeline infra/parameters/params.json"
+    exit 1
+fi
+
+# Assign parameters to variables
+TEMPLATE_FILE="$1"
+STACK_NAME="$2"
+PARAM_FILE="$3"
+
+# Validate files exist
+if [ ! -f "$TEMPLATE_FILE" ]; then
+    echo "❌ Error: Template file not found: $TEMPLATE_FILE"
+    exit 1
+fi
+
+if [ ! -f "$PARAM_FILE" ]; then
+    echo "❌ Error: Parameter file not found: $PARAM_FILE"
+    exit 1
+fi
+
 check_resource_exists() {
     local resource_type="$1"
     local resource_name="$2"
@@ -29,8 +53,22 @@ check_resource_exists() {
     return 1
 }
 
+# Validate jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "❌ Error: jq is required but not installed"
+    echo "Please install jq first:"
+    echo "For Windows (in PowerShell as admin): choco install jq"
+    echo "For Linux: sudo apt-get install jq"
+    exit 1
+fi
+
 # Obtener región del archivo de parámetros
 AWS_REGION=$(jq -r '.[] | select(.ParameterKey=="AWSRegion") | .ParameterValue' "$PARAM_FILE")
+
+if [ -z "$AWS_REGION" ]; then
+    echo "❌ Error: Could not find AWSRegion in parameter file"
+    exit 1
+fi
 
 # Verificar recursos existentes
 if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
@@ -64,4 +102,14 @@ aws cloudformation deploy \
     --stack-name "$STACK_NAME" \
     --parameter-overrides file://"$PARAM_FILE" \
     --capabilities CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
+    --region "$AWS_REGION"
+
+echo "✅ Despliegue completado exitosamente"
+
+# Mostrar outputs del stack
+echo "📋 Outputs del stack:"
+aws cloudformation describe-stacks \
+    --stack-name "$STACK_NAME" \
+    --query 'Stacks[0].Outputs' \
+    --output table \
     --region "$AWS_REGION"
