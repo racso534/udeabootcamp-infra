@@ -8,6 +8,10 @@ Parameters:
     Default: ""
     AllowedPattern: ".*"
 
+  #LatestAmazonLinux2AmiId:
+    #Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    #Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
 Conditions:
   HasKeyPair: !Not [!Equals [!Ref KeyPairName, ""]]
 
@@ -41,26 +45,22 @@ Resources:
         - Key: Name
           Value: UdeABootCamp-WebServerSG
 
-  WebServerInstance:
-    Type: AWS::EC2::Instance
-    Properties:
-      InstanceType: t2.micro
-      KeyName: 
-        !If
-          - HasKeyPair
-          - !Ref KeyPairName
-          - !Ref "AWS::NoValue"
-      SecurityGroupIds:
-        - !Ref WebServerSG
-      SubnetId: !Ref PublicSubnet1
-      ImageId: !Ref LatestAmazonLinux2AmiId
-      Tags:
-        - Key: Name
-          Value: UdeABootCamp-WebServer
-
-  LatestAmazonLinux2AmiId:
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+#  WebServerInstance:
+#    Type: AWS::EC2::Instance
+#    Properties:
+#      InstanceType: t2.micro
+#      KeyName: 
+#        !If
+#          - HasKeyPair
+#          - !Ref KeyPairName
+#          - !Ref "AWS::NoValue"
+#      SecurityGroupIds:
+#        - !Ref WebServerSG
+#      SubnetId: !Ref PublicSubnet1
+#      ImageId: !Ref LatestAmazonLinux2AmiId
+#      Tags:
+#        - Key: Name
+#          Value: UdeABootCamp-WebServer
 
 Outputs:
   PublicSubnet1Id:
