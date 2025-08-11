@@ -18,4 +18,10 @@
   {"ParameterKey": "DBUserParam", "ParameterValue": "/proyectofestivos/db_user"},
   {"ParameterKey": "DBPassParam", "ParameterValue": "/proyectofestivos/db_pass"},
   {"ParameterKey": "GitHubConnectionArn", "ParameterValue": "arn:aws:codeconnections:us-east-1:439793709861:connection/e4ab560e-f56e-4b65-a4af-3ed73e181b40"}
+  {"GitHubConnectionArn": "arn:aws:codeconnections:us-east-1:439793709861:connection/e4ab560e-f56e-4b65-a4af-3ed73e181b40",
+  "GitHubRepository": "aiops88/udeabootcamp-infraaznc",
+  "GitHubBranch": "main",
+  "ClusterName": "proyectofestivos-cluster",
+  "ServiceName": "proyectofestivos-backend"
+  }
 ]
