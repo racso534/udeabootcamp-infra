@@ -162,13 +162,35 @@ Resources:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
 
+
 Outputs:
   VpcId:
     Description: VPC Id
     Value: !Ref VPC
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-vpc"
+
   PublicSubnetIds:
     Description: Public subnet IDs (comma separated)
     Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-public-subnets"
+
   PrivateSubnetIds:
     Description: Private subnet IDs (comma separated)
     Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-private-subnets"
+
+  # Exports individuales para las subnets privadas
+  PrivateSubnet1Id:
+    Description: Private subnet 1 ID
+    Value: !Ref PrivateSubnet1
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-private-1"
+
+  PrivateSubnet2Id:
+    Description: Private subnet 2 ID
+    Value: !Ref PrivateSubnet2
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-private-2"
