@@ -102,16 +102,16 @@ Resources:
       Family: udeabootcamp-backend-task
       RequiresCompatibilities:
         - EC2
-      NetworkMode: awsvpc
-      Cpu: '512'
-      Memory: '1024'
+      NetworkMode: bridge
+      Cpu: '256'
+      Memory: '512'
       ExecutionRoleArn: !GetAtt UdeABootCampECSTaskExecutionRole.Arn
       TaskRoleArn: !GetAtt UdeABootCampECSTaskRole.Arn
       ContainerDefinitions:
         - Name: udeabootcamp-backend
-          Image: !GetAtt UdeABootCampECRFrontend.RepositoryUri
+          Image: !GetAtt UdeABootCampECRBackend.RepositoryUri
           PortMappings:
-            - ContainerPort: 8080
+            - ContainerPort: 80
           LogConfiguration:
             LogDriver: awslogs
             Options:
@@ -126,7 +126,7 @@ Resources:
       Family: udeabootcamp-frontend-task
       RequiresCompatibilities:
         - EC2
-      NetworkMode: awsvpc
+      NetworkMode: bridge
       Cpu: '256'
       Memory: '512'
       ExecutionRoleArn: !GetAtt UdeABootCampECSTaskExecutionRole.Arn
@@ -146,36 +146,27 @@ Resources:
   # ECS Service - Backend (EC2)
   UdeABootCampBackendService:
     Type: AWS::ECS::Service
+    DependsOn:
+        - UdeABootCampECSCluster
+        - UdeABootCampBackendTaskDefinition
     Properties:
-      ServiceName: udeabootcamp-backend-service
-      Cluster: !Ref UdeABootCampECSCluster
-      TaskDefinition: !Ref UdeABootCampBackendTaskDefinition
-      DesiredCount: 1
-      LaunchType: EC2
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          SecurityGroups:
-            - !ImportValue BaseSecurityGroupId
-          Subnets: 
-            - !ImportValue UdeABootCamp-PublicSubnet1Id
+        ServiceName: udeabootcamp-backend-service
+        Cluster: !Ref UdeABootCampECSCluster
+        DesiredCount: 0
+        LaunchType: EC2
+        TaskDefinition: !Ref UdeABootCampBackendTaskDefinition
 
-  # ECS Service - Frontend (EC2)
   UdeABootCampFrontendService:
     Type: AWS::ECS::Service
+    DependsOn:
+     - UdeABootCampECSCluster
+     - UdeABootCampFrontendTaskDefinition
     Properties:
-      ServiceName: udeabootcamp-frontend-service
-      Cluster: !Ref UdeABootCampECSCluster
-      TaskDefinition: !Ref UdeABootCampFrontendTaskDefinition
-      DesiredCount: 1
-      LaunchType: EC2
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          SecurityGroups:
-            - !ImportValue BaseSecurityGroupId
-          Subnets: 
-            - !ImportValue UdeABootCamp-PublicSubnet1Id
+        ServiceName: udeabootcamp-frontend-service
+        Cluster: !Ref UdeABootCampECSCluster      
+        DesiredCount: 0
+        LaunchType: EC2
+        TaskDefinition: !Ref UdeABootCampFrontendTaskDefinition
 
 Outputs:
   BackendRepositoryUri:
@@ -197,7 +188,3 @@ Outputs:
   ECSTaskRoleArn:
     Description: ARN del task role para containers
     Value: !GetAtt UdeABootCampECSTaskRole.Arn
-    
-  DebugSubnetId:
-    Description: "Valor de la subred importada para depuración"
-    Value: !Sub "Valor de la subred importada: ${UdeABootCamp-PublicSubnet1Id}"
