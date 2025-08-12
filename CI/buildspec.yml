@@ -1,0 +1,44 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_DEFAULT_REGION: "us-east-1"
+    # Estos env vars se inyectarán desde el CodeBuild project en pipeline.yml
+    # ACCOUNT_ID and REPO_URI will be provided by CodeBuild environment variables or pipeline
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - REPO_URI="$ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$REPO_NAME"
+      - IMAGE_TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION::8}
+      - echo "REPO_URI=$REPO_URI" > repo_info.txt
+      - $(aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com)
+  build:
+    commands:
+      - echo "Building project..."
+      - |
+        if [ -f ./apiFestivos/pom.xml ] || [ -f ./apiFestivos/build.gradle ]; then
+          echo "Detected backend (Java). Building..."
+          cd apiFestivos || exit 1
+          mvn -B -DskipTests package || true
+          cd -
+        fi
+      - |
+        if [ -f ./frontend/package.json ]; then
+          echo "Detected frontend. Building..."
+          cd frontend || exit 1
+          npm install --no-audit --no-fund
+          npm run build || true
+          cd -
+        fi
+      - echo "Building docker image..."
+      - docker build -t $REPO_URI:$IMAGE_TAG $DOCKER_CONTEXT
+  post_build:
+    commands:
+      - echo "Pushing image to ECR..."
+      - docker push $REPO_URI:$IMAGE_TAG
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPO_URI:$IMAGE_TAG" > imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json

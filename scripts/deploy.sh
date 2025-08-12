@@ -1,17 +1,29 @@
 #!/bin/bash
 set -e
 
-STACK_NAME=$1
-TEMPLATE_FILE=$2
-REGION="us-east-2"
+PARAMS_FILE="parameters/params.json"
 
-if [ -z "$STACK_NAME" ] || [ -z "$TEMPLATE_FILE" ]; then
-    echo "Uso: ./deploy.sh <stack-name> <template-file>"
-    exit 1
-fi
+echo "=== Validando credenciales AWS ==="
+aws sts get-caller-identity --output text > /dev/null || { echo "❌ Credenciales inválidas"; exit 1; }
 
-aws cloudformation deploy \
-  --stack-name "$STACK_NAME" \
-  --template-file "$TEMPLATE_FILE" \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --region "$REGION"
+echo "=== Leyendo parámetros desde $PARAMS_FILE ==="
+AWS_REGION=$(jq -r '.[] | select(.ParameterKey=="AWSRegion") | .ParameterValue' $PARAMS_FILE)
+
+function deploy_stack() {
+  local template=$1
+  local stack=$2
+  echo "=== Desplegando $stack ==="
+  aws cloudformation deploy \
+    --template-file $template \
+    --stack-name $stack \
+    --parameter-overrides file://$PARAMS_FILE \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --region $AWS_REGION
+}
+
+deploy_stack infra/cloudformation/iam.yml "${STACK_PREFIX:-proyectofestivos}-iam"
+deploy_stack infra/cloudformation/vpc.yml "${STACK_PREFIX:-proyectofestivos}-vpc"
+deploy_stack infra/cloudformation/infra-app.yml "${STACK_PREFIX:-proyectofestivos}-infra"
+deploy_stack infra/cloudformation/pipeline.yml "${STACK_PREFIX:-proyectofestivos}-pipeline"
+
+echo "✅ Despliegue completo"
