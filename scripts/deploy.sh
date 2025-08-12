@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-PARAMS_FILE="params.json"
+PARAMS_FILE="parameters/params.json"
 
 echo "=== Validando credenciales AWS ==="
 aws sts get-caller-identity --output text > /dev/null || { echo "❌ Credenciales inválidas"; exit 1; }
