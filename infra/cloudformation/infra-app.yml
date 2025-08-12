@@ -17,8 +17,8 @@ Parameters:
     Type: String
   InstanceType:
     Type: String
-    Default: t2.micro
-    Description: EC2 instance type for ECS instances (free-tier: t2.micro)
+    Default: t3.micro
+    Description: EC2 instance type for ECS instances
   KeyName:
     Type: String
     Default: ""
