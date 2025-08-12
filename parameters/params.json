@@ -7,6 +7,8 @@
   {"ParameterKey": "PublicSubnet2CIDR", "ParameterValue": "10.0.2.0/24"},
   {"ParameterKey": "PrivateSubnet1CIDR", "ParameterValue": "10.0.3.0/24"},
   {"ParameterKey": "PrivateSubnet2CIDR", "ParameterValue": "10.0.4.0/24"},
+  {"ParameterKey": "Az1", "ParameterValue": "us-east-1a"},
+  {"ParameterKey": "Az2", "ParameterValue": "us-east-1b"}
   {"ParameterKey": "ClusterName", "ParameterValue": "proyectofestivos-cluster"},
   {"ParameterKey": "ECRRepoBackend", "ParameterValue": "apifestivos-backend"},
   {"ParameterKey": "ECRRepoFrontend", "ParameterValue": "apifestivos-frontend"},
