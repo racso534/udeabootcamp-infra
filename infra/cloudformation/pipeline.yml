@@ -51,6 +51,15 @@ Resources:
                 Resource:
                   - "*"
                   - !Ref GitHubConnectionArn
+        - PolicyName: AllowCodeConnections
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codeconnections:UseConnection
+                Resource: arn:aws:codeconnections:us-east-1:439793709861:connection/e4ab560e-f56e-4b65-a4af-3ed73e181b40
+
 
   ProjectFestivosPipeline:
     Type: AWS::CodePipeline::Pipeline
