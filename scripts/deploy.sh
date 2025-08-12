@@ -1,6 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+check_aws_credentials() {
+    echo "🔑 Verificando credenciales AWS..."
+    
+    if ! aws sts get-caller-identity &>/dev/null; then
+        echo "❌ Credenciales AWS no configuradas o inválidas"
+        
+        # Intentar obtener credenciales del rol
+        if aws sts get-session-token &>/dev/null; then
+            echo "✅ Usando rol IAM existente"
+            return 0
+        fi
+        
+        # Solicitar credenciales si no hay rol
+        echo "📝 Configurando credenciales AWS..."
+        read -p "AWS Access Key ID: " aws_access_key
+        read -p "AWS Secret Access Key: " aws_secret_key
+        read -p "Default region [us-east-1]: " aws_region
+        aws_region=${aws_region:-us-east-1}
+        
+        # Configurar credenciales
+        aws configure set aws_access_key_id "$aws_access_key"
+        aws configure set aws_secret_access_key "$aws_secret_key"
+        aws configure set default.region "$aws_region"
+        aws configure set output json
+        
+        # Verificar configuración
+        if ! aws sts get-caller-identity &>/dev/null; then
+            echo "❌ Error configurando credenciales AWS"
+            exit 1
+        fi
+    fi
+    
+    echo "✅ Credenciales AWS verificadas"
+}
+
 # Validate input parameters
 if [ "$#" -ne 3 ]; then
     echo "❌ Error: Missing required parameters"
@@ -8,6 +43,9 @@ if [ "$#" -ne 3 ]; then
     echo "Example: $0 infra/cloudformation/pipeline.yml proyectofestivos-pipeline infra/parameters/params.json"
     exit 1
 fi
+
+# Verify AWS credentials first
+check_aws_credentials
 
 # Assign parameters to variables
 TEMPLATE_FILE="$1"
@@ -62,7 +100,7 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-# Obtener región del archivo de parámetros
+# Get region from parameters file
 AWS_REGION=$(jq -r '.[] | select(.ParameterKey=="AWSRegion") | .ParameterValue' "$PARAM_FILE")
 
 if [ -z "$AWS_REGION" ]; then
@@ -70,29 +108,30 @@ if [ -z "$AWS_REGION" ]; then
     exit 1
 fi
 
-# Verificar recursos existentes
+# Check existing resources
 if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
     echo "Stack ya existe, verificando otros recursos..."
     
-    # Obtener nombres de repositorios ECR
+    # Get ECR repository names
     ECR_REPO_BACKEND=$(jq -r '.[] | select(.ParameterKey=="ECRRepoBackend") | .ParameterValue' "$PARAM_FILE")
     ECR_REPO_FRONTEND=$(jq -r '.[] | select(.ParameterKey=="ECRRepoFrontend") | .ParameterValue' "$PARAM_FILE")
-
-    # Verificar repositorios ECR
+    
+    # Check ECR repositories
     for repo in "$ECR_REPO_BACKEND" "$ECR_REPO_FRONTEND"; do
         if [ ! -z "$repo" ] && ! check_resource_exists "ecr" "$repo" "$AWS_REGION"; then
             echo "Creando repositorio ECR $repo..."
             aws ecr create-repository --repository-name "$repo" --region "$AWS_REGION"
         fi
     done
-
-    # Verificar cluster ECS
+    
+    # Check ECS cluster
     ECS_CLUSTER_NAME=$(jq -r '.[] | select(.ParameterKey=="ClusterName") | .ParameterValue' "$PARAM_FILE")
     if [ ! -z "$ECS_CLUSTER_NAME" ] && ! check_resource_exists "ecs-cluster" "$ECS_CLUSTER_NAME" "$AWS_REGION"; then
         echo "Creando cluster ECS $ECS_CLUSTER_NAME..."
         aws ecs create-cluster --cluster-name "$ECS_CLUSTER_NAME" --region "$AWS_REGION"
     fi
-    # Agregar resumen final aquí
+
+    # Add final summary
     echo ""
     echo "🎯 Resumen de la infraestructura existente:"
     echo "----------------------------------------"
@@ -108,7 +147,7 @@ if check_resource_exists "stack" "$STACK_NAME" "$AWS_REGION"; then
     echo "  1. Verificar el pipeline en: https://console.aws.amazon.com/codesuite/codepipeline/pipelines"
     echo "  2. Hacer push a tu repo para iniciar un nuevo deployment"
     echo "  3. Monitorear el progreso en AWS Console"
-
+    
     exit 0
 fi
 
@@ -122,7 +161,7 @@ aws cloudformation deploy \
 
 echo "✅ Despliegue completado exitosamente"
 
-# Mostrar outputs del stack
+# Show stack outputs
 echo "📋 Outputs del stack:"
 aws cloudformation describe-stacks \
     --stack-name "$STACK_NAME" \
