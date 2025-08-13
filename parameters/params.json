@@ -19,13 +19,15 @@
   {"ParameterKey": "DBPort", "ParameterValue": "5432"},
   {"ParameterKey": "DBUserParam", "ParameterValue": "/proyectofestivos/db_user"},
   {"ParameterKey": "DBPassParam", "ParameterValue": "/proyectofestivos/db_pass"},
-  {"ParameterKey": "GitHubConnectionArn", "ParameterValue": "arn:aws:codeconnections:us-east-1:439793709861:connection/e4ab560e-f56e-4b65-a4af-3ed73e181b40"},
-  {"ParameterKey": "GitHubRepository", "ParameterValue": "aiops88/udeabootcamp-infraaznc"},
+  {"ParameterKey": "GitHubConnectionArn", "ParameterValue": "arn:aws:codeconnections:us-east-1:712598386003:connection/b0398d70-4a51-4d79-af56-1e0c1755b1ec"},
+  {"ParameterKey": "GitHubRepository", "ParameterValue": "racso534/TT_ANI_apiCambiosMoneda_ECR"},
   {"ParameterKey": "GitHubBranch", "ParameterValue": "main"},
   {"ParameterKey": "ServiceName", "ParameterValue": "proyectofestivos-backend"},
   {"ParameterKey": "ContainerMemory", "ParameterValue": "512"},
   {"ParameterKey": "ContainerCPU", "ParameterValue": "256"},
   {"ParameterKey": "DesiredCount", "ParameterValue": "1"},
   {"ParameterKey": "MaxCapacity", "ParameterValue": "2"},
-  {"ParameterKey": "MinCapacity", "ParameterValue": "1"}
+  {"ParameterKey": "MinCapacity", "ParameterValue": "1"},
+  {"ParameterKey": "AWSAccount", "ParameterValue": "712598386003"},
+  {"ParameterKey": "TagImage", "ParameterValue": "latest"}
 ]

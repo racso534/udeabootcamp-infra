@@ -149,6 +149,19 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${ProjectName}-${Environment}-private-2"
+          
+  SecurityGroupBaseSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG base para UdeABootCamp
+      VpcId: !Ref VPC
+      SecurityGroupIngress: []
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-BaseSG" 
 
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -194,3 +207,15 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: !Sub "${ProjectName}-${Environment}-private-2"
+  
+  PublicSubnet1Id:
+    Description: Private subnet 1 ID
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub "${ProjectName}-${Environment}-public-1"
+      
+  #BaseSecurityGroupId:
+    #Description: ID del Security Group base
+    #Value: !Ref SecurityGroupBaseSG
+    #Export:
+      #Name: !Sub "${ProjectName}-${Environment}-BaseSG"

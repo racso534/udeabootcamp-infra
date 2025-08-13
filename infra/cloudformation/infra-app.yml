@@ -27,40 +27,113 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
     Description: SSM parameter path for AMI ID
+  TagImage:
+    Type: String
+    Description: tag latest para las imagenes en ECR
 
 Resources:
-  # ECR repos
-  ECRBackend:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Ref ECRRepoBackend
-      LifecyclePolicy:
-        LifecyclePolicyText:
-          Fn::Sub: |
-            {
-              "rules": [
-                {"rulePriority": 1, "description": "Keep last 10 images", "selection": {"tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 10}, "action": {"type": "expire"}}
-              ]
-            }
-
-  ECRFrontend:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Ref ECRRepoFrontend
-      LifecyclePolicy:
-        LifecyclePolicyText:
-          Fn::Sub: |
-            {
-              "rules": [
-                {"rulePriority": 1, "description": "Keep last 10 images", "selection": {"tagStatus": "any", "countType": "imageCountMoreThan", "countNumber": 10}, "action": {"type": "expire"}}
-              ]
-            }
 
   # ECS Cluster
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Ref ClusterName
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-${Environment}-cluster"
+      
+  
+    # ECS Service - Backend (EC2)
+  ECSBackendService:
+    Type: AWS::ECS::Service
+    DependsOn:
+        - ECSCluster
+        - ECSBackendTaskDefinition
+    Properties:
+        ServiceName: !Sub "${ProjectName}-${Environment}-backend-service"
+        Cluster: !Ref ECSCluster
+        DesiredCount: 1
+        LaunchType: EC2
+        TaskDefinition: !Ref ECSBackendTaskDefinition
+        NetworkConfiguration:
+            AwsvpcConfiguration:
+                AssignPublicIp: DISABLED
+                Subnets:
+                    - !ImportValue 
+                        'Fn::Sub': "${ProjectName}-${Environment}-public-1"  
+                SecurityGroups:
+                    - !Ref ECSInstanceSecurityGroup
+        
+  # IAM Role: ECS Task Execution Role
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Environment}-ecs-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Path: /
+      
+  # IAM Role: ECS Task Role
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-${Environment}-ecs-task-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs-tasks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: []
+      Path: /
+        
+  # ECS Task Definition - Backend (EC2)
+  ECSBackendTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub "${ProjectName}-${Environment}-backend-task"
+      RequiresCompatibilities:
+        - EC2
+      NetworkMode: awsvpc
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Sub "${ProjectName}-${Environment}-backend-container"
+          Image: !Join
+            - ":"
+            - - !ImportValue 
+                    'Fn::Sub': "${ProjectName}-${Environment}-ecr-backend-uri"
+              - !Ref TagImage
+          PortMappings:
+            - ContainerPort: 8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: /ecs/festivos-backend
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+  
+  
+  
+  UdeABootCampLogGroupBackend:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/festivos-backend
+      RetentionInDays: 14
 
   # IAM Role for ECS instances
   ECSInstanceRole:
@@ -103,49 +176,64 @@ Resources:
         - Key: Name
           Value: !Sub "${ProjectName}-${Environment}-ecs-sg"
 
-  # Launch Configuration / ASG for ECS instances
-  ECSLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      ImageId: !Ref AmiSSMParameter
-      InstanceType: !Ref InstanceType
-      IamInstanceProfile: !Ref ECSInstanceProfile
-      SecurityGroups:
-        - !Ref ECSInstanceSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
+  # Launch Configuration / ASG for ECS instances - DEPRECADO
+  #ECSLaunchConfiguration:
+    #Type: AWS::AutoScaling::LaunchConfiguration
+    #Properties:
+      #ImageId: !Ref AmiSSMParameter
+      #InstanceType: !Ref InstanceType
+      #IamInstanceProfile: !Ref ECSInstanceProfile
+      #SecurityGroups:
+        #- !Ref ECSInstanceSecurityGroup
+      #UserData:
+        #Fn::Base64: !Sub |
           #!/bin/bash -xe
-          echo "ECS_CLUSTER=${ClusterName}" >> /etc/ecs/ecs.config
+          #echo "ECS_CLUSTER=${ClusterName}" >> /etc/ecs/ecs.config
           # install awslogs config (optional)
-          yum update -y
-          yum install -y aws-cli jq
+          #yum update -y
+          #yum install -y aws-cli jq
           # start ecs agent (on ami it should be present)
-          start ecs || true
-
+          #start ecs || true
+  
+  ECSLaunchTemplate:
+      Type: AWS::EC2::LaunchTemplate
+      Properties:
+        LaunchTemplateName: !Sub "${ProjectName}-${Environment}-launch-template"
+        LaunchTemplateData:
+          ImageId: ami-0de716d6197524dd9
+          InstanceType: !Ref InstanceType
+          IamInstanceProfile:
+            Arn: !GetAtt ECSInstanceProfile.Arn
+          SecurityGroupIds:
+            - !Ref ECSInstanceSecurityGroup
+          UserData:
+            Fn::Base64: !Sub |
+              #!/bin/bash -xe
+              echo "ECS_CLUSTER=${ClusterName}" >> /etc/ecs/ecs.config
+              yum update -y
+              yum install -y aws-cli jq
+              start ecs || true          
+          
   ECSAutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      VPCZoneIdentifier:
-        - !ImportValue
-            'Fn::Sub': "${ProjectName}-${Environment}-private-1"
-        - !ImportValue
-            'Fn::Sub': "${ProjectName}-${Environment}-private-2"
-      LaunchConfigurationName: !Ref ECSLaunchConfiguration
-      MinSize: '1'
-      MaxSize: '2'
-      DesiredCapacity: '1'
-      Tags:
-        - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-ecs-asg"
-          PropagateAtLaunch: true
+      Type: AWS::AutoScaling::AutoScalingGroup
+      Properties:
+        VPCZoneIdentifier:
+          - !ImportValue
+              'Fn::Sub': "${ProjectName}-${Environment}-private-1"
+          - !ImportValue
+              'Fn::Sub': "${ProjectName}-${Environment}-private-2"
+        LaunchTemplate:
+          LaunchTemplateId: !Ref ECSLaunchTemplate
+          Version: !GetAtt ECSLaunchTemplate.LatestVersionNumber
+        MinSize: '1'
+        MaxSize: '2'
+        DesiredCapacity: '1'
+        Tags:
+          - Key: Name
+            Value: !Sub "${ProjectName}-${Environment}-ecs-asg"
+            PropagateAtLaunch: true
 
 Outputs:
-  ECRBackendUri:
-    Description: ECR repository URI for backend
-    Value: !GetAtt [ECRBackend, RepositoryUri]
-  ECRFrontendUri:
-    Description: ECR repository URI for frontend
-    Value: !GetAtt [ECRFrontend, RepositoryUri]
   ECSClusterName:
     Description: ECS cluster name
     Value: !Ref ECSCluster

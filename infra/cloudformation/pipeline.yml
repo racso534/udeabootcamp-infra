@@ -7,7 +7,7 @@ Parameters:
     Description: ARN de la conexión de CodeConnections con GitHub
   GitHubRepository:
     Type: String
-    Default: aiops88/udeabootcamp-infraaznc
+    Default: racso534/TT_ANI_apiCambiosMoneda_ECR
     Description: Nombre del repositorio en GitHub (usuario/repo)
   GitHubBranch:
     Type: String
@@ -58,7 +58,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - codeconnections:UseConnection
-                Resource: arn:aws:codeconnections:us-east-1:439793709861:connection/e4ab560e-f56e-4b65-a4af-3ed73e181b40
+                Resource: arn:aws:codeconnections:us-east-1:712598386003:connection/b0398d70-4a51-4d79-af56-1e0c1755b1ec
 
 
   ProjectFestivosPipeline:
