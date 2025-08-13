@@ -71,7 +71,7 @@ Resources:
                   - s3:*
                   - ecs:*
                   - codebuild:*
-                  - cloudformation:*                  
+                  - cloudformation:*
                 Resource: "*"
 
 Outputs:

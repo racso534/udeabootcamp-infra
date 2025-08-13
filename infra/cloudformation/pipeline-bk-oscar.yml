@@ -3,13 +3,13 @@ Description: CodePipeline para Proyecto Festivos con integración GitHub (CodeCo
 
 Parameters:
   ProjectName:
-    Type: String 
+    Type: String  
   GitHubConnectionArn:
     Type: String
     Description: ARN de la conexión de CodeConnections con GitHub
   GitHubRepository:
     Type: String
-    Default: racso534/UdeA_Api_Festivos
+    Default: racso534/udeabootcamp-infra
     Description: Nombre del repositorio en GitHub (usuario/repo)
   GitHubBranch:
     Type: String
@@ -60,7 +60,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - codeconnections:UseConnection
-                Resource: !Ref GitHubConnectionArn
+                Resource: arn:aws:codeconnections:us-east-1:712598386003:connection/b0398d70-4a51-4d79-af56-1e0c1755b1ec
 
 
   ProjectFestivosPipeline:
@@ -131,7 +131,7 @@ Resources:
     Properties:
       Name: proyectofestivos-build
       ServiceRole: !ImportValue 
-                       Fn::Sub: "${ProjectName}-build-role-arn"
+                      'Fn::Sub': "${ProjectName}-build-role-arn"
       Artifacts:
         Type: CODEPIPELINE
       Environment:

@@ -45,8 +45,8 @@ function push_init_image() {
 	echo "=== Completada Image Docker ==="
 }
 
-#deploy_stack infra/cloudformation/iam.yml "${STACK_PREFIX:-proyectofestivos}-iam"
-#deploy_stack infra/cloudformation/vpc.yml "${STACK_PREFIX:-proyectofestivos}-vpc"
+deploy_stack infra/cloudformation/iam.yml "${STACK_PREFIX:-proyectofestivos}-iam"
+deploy_stack infra/cloudformation/vpc.yml "${STACK_PREFIX:-proyectofestivos}-vpc"
 deploy_stack infra/cloudformation/infra-ecr.yml "${STACK_PREFIX:-proyectofestivos}-ecr"
 
 #push_init_image

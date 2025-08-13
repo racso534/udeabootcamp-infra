@@ -20,7 +20,7 @@
   {"ParameterKey": "DBUserParam", "ParameterValue": "/proyectofestivos/db_user"},
   {"ParameterKey": "DBPassParam", "ParameterValue": "/proyectofestivos/db_pass"},
   {"ParameterKey": "GitHubConnectionArn", "ParameterValue": "arn:aws:codeconnections:us-east-1:712598386003:connection/b0398d70-4a51-4d79-af56-1e0c1755b1ec"},
-  {"ParameterKey": "GitHubRepository", "ParameterValue": "racso534/TT_ANI_apiCambiosMoneda_ECR"},
+  {"ParameterKey": "GitHubRepository", "ParameterValue": "racso534/UdeA_Api_Festivos"},
   {"ParameterKey": "GitHubBranch", "ParameterValue": "main"},
   {"ParameterKey": "ServiceName", "ParameterValue": "proyectofestivos-backend"},
   {"ParameterKey": "ContainerMemory", "ParameterValue": "512"},
