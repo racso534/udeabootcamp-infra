@@ -67,6 +67,7 @@ Resources:
                   - ecr:UploadLayerPart
                   - ecr:InitiateLayerUpload
                   - ecr:PutImage
+                  - ecr:*
                   - logs:*
                   - s3:*
                   - ecs:*

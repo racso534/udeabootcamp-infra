@@ -6,9 +6,6 @@ Description: >-
 Parameters:
   ProjectName:
     Type: String
-  Environment:
-    Type: String
-    Default: staging
   ClusterName:
     Type: String
   ECRRepoBackend:
@@ -81,43 +78,14 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-            - !Ref ECSServiceSecurityGroup
+            - !ImportValue 
+                'Fn::Sub': "${ProjectName}-sg"
           Subnets:
             - !ImportValue 
-                'Fn::Sub': "${ProjectName}-${Environment}-private-1"
+                'Fn::Sub': "${ProjectName}-public-1"
             - !ImportValue 
-                'Fn::Sub': "${ProjectName}-${Environment}-private-2"
-  
-  ECSServiceSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group para tareas ECS Fargate
-      VpcId: !ImportValue
-        'Fn::Sub': "${ProjectName}-${Environment}-vpc"
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-          
-  # Security Group for ECS instances
-#  ECSInstanceSecurityGroup:
-#    Type: AWS::EC2::SecurityGroup
-#    Properties:
-#      GroupDescription: Security group for ECS instances
-#      VpcId: !ImportValue
-#        'Fn::Sub': "${ProjectName}-${Environment}-vpc"
-#      SecurityGroupIngress:
-#        - IpProtocol: tcp
-#          FromPort: 22
-#          ToPort: 22
-#          CidrIp: 0.0.0.0/0
-#      Tags:
-#        - Key: Name
-#          Value: !Sub "${ProjectName}-${Environment}-ecs-sg"
-        
-        
-        
+                'Fn::Sub': "${ProjectName}-public-2"
+     
         
   # ECS Task Definition - Backend (EC2)
   ECSBackendTaskDefinition:
@@ -135,8 +103,8 @@ Resources:
         - Name: !Sub "${ProjectName}-backend-container"
           Image: !GetAtt ECRBackend.RepositoryUri
           PortMappings:
-            -   ContainerPort: 80
-                HostPort: 80
+            -   ContainerPort: 8080
+                HostPort: 8080
                 Protocol: tcp
           LogConfiguration:
             LogDriver: awslogs

@@ -6,9 +6,6 @@ Description: >-
 Parameters:
   ProjectName:
     Type: String
-  Environment:
-    Type: String
-    Default: staging
   VpcCIDR:
     Type: String
     Description: CIDR block for the VPC
@@ -34,14 +31,14 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-vpc"
+          Value: !Sub "${ProjectName}-vpc"
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-igw"
+          Value: !Sub "${ProjectName}-igw"
 
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -55,7 +52,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-public-rt"
+          Value: !Sub "${ProjectName}-public-rt"
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -73,7 +70,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-public-1"
+          Value: !Sub "${ProjectName}-public-1"
 
   PublicSubnet2:
     Type: AWS::EC2::Subnet
@@ -84,7 +81,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-public-2"
+          Value: !Sub "${ProjectName}-public-2"
 
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -111,7 +108,7 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-nat"
+          Value: !Sub "${ProjectName}-nat"
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -119,7 +116,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-private-rt"
+          Value: !Sub "${ProjectName}-private-rt"
 
   PrivateRoute:
     Type: AWS::EC2::Route
@@ -137,7 +134,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-private-1"
+          Value: !Sub "${ProjectName}-private-1"
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -148,7 +145,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Environment}-private-2"
+          Value: !Sub "${ProjectName}-private-2"
 
   PrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -161,6 +158,17 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
+      
+  ECSServiceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group para tareas ECS Fargate
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
 
 
 Outputs:
@@ -168,35 +176,47 @@ Outputs:
     Description: VPC Id
     Value: !Ref VPC
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-vpc"
+      Name: !Sub "${ProjectName}--vpc"
 
   PublicSubnetIds:
     Description: Public subnet IDs (comma separated)
     Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-public-subnets"
+      Name: !Sub "${ProjectName}-public-subnets"
 
   PrivateSubnetIds:
     Description: Private subnet IDs (comma separated)
     Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-private-subnets"
+      Name: !Sub "${ProjectName}-private-subnets"
 
   # Exports individuales para las subnets privadas
   PrivateSubnet1Id:
     Description: Private subnet 1 ID
     Value: !Ref PrivateSubnet1
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-private-1"
+      Name: !Sub "${ProjectName}-private-1"
 
   PrivateSubnet2Id:
     Description: Private subnet 2 ID
     Value: !Ref PrivateSubnet2
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-private-2"
+      Name: !Sub "${ProjectName}-private-2"
   
   PublicSubnet1Id:
-    Description: Private subnet 1 ID
+    Description: Public subnet 1 ID
     Value: !Ref PublicSubnet1
     Export:
-      Name: !Sub "${ProjectName}-${Environment}-public-1"
+      Name: !Sub "${ProjectName}-public-1"
+      
+  PublicSubnet2Id:
+    Description: Public subnet 2 ID
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub "${ProjectName}-public-2"
+      
+  ServiceSecurityGroupId:
+    Description: Security Group
+    Value: !Ref ECSServiceSecurityGroup
+    Export:
+      Name: !Sub "${ProjectName}-sg"

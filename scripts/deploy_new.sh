@@ -23,8 +23,7 @@ function deploy_stack() {
 
 deploy_stack infra/cloudformation/iam.yml "${STACK_PREFIX:-proyectofestivos}-iam"
 deploy_stack infra/cloudformation/vpc.yml "${STACK_PREFIX:-proyectofestivos}-vpc"
-#deploy_stack infra/cloudformation/infra-ecr.yml "${STACK_PREFIX:-proyectofestivos}-ecr"
 deploy_stack infra/cloudformation/infra-app.yml "${STACK_PREFIX:-proyectofestivos}-infra"
-deploy_stack infra/cloudformation/pipeline.yml "${STACK_PREFIX:-proyectofestivos}-pipeline"
+#deploy_stack infra/cloudformation/pipeline.yml "${STACK_PREFIX:-proyectofestivos}-pipeline"
 
 echo "✅ Despliegue completo"
