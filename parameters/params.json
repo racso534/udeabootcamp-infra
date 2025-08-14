@@ -22,12 +22,12 @@
   {"ParameterKey": "GitHubConnectionArn", "ParameterValue": "arn:aws:codeconnections:us-east-1:712598386003:connection/b0398d70-4a51-4d79-af56-1e0c1755b1ec"},
   {"ParameterKey": "GitHubRepository", "ParameterValue": "racso534/UdeA_Api_Festivos"},
   {"ParameterKey": "GitHubBranch", "ParameterValue": "main"},
-  {"ParameterKey": "ServiceName", "ParameterValue": "proyectofestivos-backend"},
+  {"ParameterKey": "ServiceName", "ParameterValue": "apifestivos-backend"},
   {"ParameterKey": "ContainerMemory", "ParameterValue": "512"},
   {"ParameterKey": "ContainerCPU", "ParameterValue": "256"},
   {"ParameterKey": "DesiredCount", "ParameterValue": "1"},
   {"ParameterKey": "MaxCapacity", "ParameterValue": "2"},
   {"ParameterKey": "MinCapacity", "ParameterValue": "1"},
   {"ParameterKey": "AWSAccount", "ParameterValue": "712598386003"},
-  {"ParameterKey": "TagImage", "ParameterValue": "latest"}
+  {"ParameterKey": "TagImage", "ParameterValue": "latest"}  
 ]
